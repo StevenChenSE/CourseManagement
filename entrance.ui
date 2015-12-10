@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Entrance</class>
+ <widget class="QDialog" name="Entrance">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>272</width>
+    <height>128</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>选择登陆角色</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QPushButton" name="studentButton">
+     <property name="text">
+      <string>学生登陆</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="teacherButton">
+     <property name="text">
+      <string>教师登陆</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="adminButton">
+     <property name="text">
+      <string>管理员登陆</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
