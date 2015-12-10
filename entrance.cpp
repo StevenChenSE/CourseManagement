@@ -1,8 +1,6 @@
 #include "entrance.h"
 #include "ui_entrance.h"
 #include "logindialog.h"
-#include <QMessageBox>
-#include <QSqlError>
 Entrance::Entrance(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Entrance)
@@ -14,6 +12,7 @@ Entrance::Entrance(QWidget *parent) :
 
 Entrance::~Entrance()
 {
+    QSqlDatabase::database().close();
     delete ui;
 }
 

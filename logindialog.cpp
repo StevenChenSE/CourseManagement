@@ -1,10 +1,7 @@
 #include "logindialog.h"
 #include "ui_logindialog.h"
-#include <QMessageBox>
-#include <QSqlError>
-#include <QSqlTableModel>
-#include <QSqlRecord>
-#include <QDebug>
+#include "teacherwindow.h"
+#include "adminwindow.h"
 LoginDialog::LoginDialog(QWidget *parent, Mode md) :
     QDialog(parent),mode(md),
     ui(new Ui::LoginDialog)
@@ -37,14 +34,14 @@ void LoginDialog::on_buttonBox_accepted()
     case teacher:
     {
         checkPass.setTable("teacher");
-        checkPass.setFilter("teacherid="+ui->id->text());
+        checkPass.setFilter("teacherno='"+ui->id->text()+"'");
         checkPass.select();
     }
         break;
     case student:
     {
         checkPass.setTable("student");
-        checkPass.setFilter("studentid="+ui->id->text());
+        checkPass.setFilter("studentid='"+ui->id->text()+"'");
         checkPass.select();
     }
         break;
@@ -59,12 +56,28 @@ void LoginDialog::on_buttonBox_accepted()
     record=checkPass.record(0);
     if(ui->password->text()!=record.value("passwd").toString())
     {
+        qDebug()<<ui->password->text();
+        qDebug()<<record.value("passwd").toString();
         QMessageBox::warning(this,tr("错误"),tr("密码错误或账号不存在!"));
         emit reject();
     }
     else
     {
-        QMessageBox::about(this,tr("成功"),tr("you got it!"));
-        emit accept();
+        switch (mode) {
+        case teacher:
+        {
+            TeacherWindow* tw=new TeacherWindow(NULL,ui->id->text());
+            this->hide();
+            tw->show();
+            break;
+        }
+        case admin:
+        {
+            AdminWindow* adw=new AdminWindow(NULL);
+            this->hide();
+            adw->show();
+            break;
+        }
+        }
     }
 }

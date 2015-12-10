@@ -1,8 +1,6 @@
 #ifndef ENTRANCE_H
 #define ENTRANCE_H
-
-#include <QDialog>
-#include <QSqlDatabase>
+#include "qtheaders.h"
 namespace Ui {
 class Entrance;
 }

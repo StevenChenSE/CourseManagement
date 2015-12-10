@@ -1,8 +1,6 @@
 #ifndef LOGINDIALOG_H
 #define LOGINDIALOG_H
-
-#include <QDialog>
-#include <QSqlDatabase>
+#include "qtheaders.h"
 namespace Ui {
 class LoginDialog;
 }

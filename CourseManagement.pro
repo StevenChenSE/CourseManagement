@@ -14,16 +14,30 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
     logindialog.cpp \
-    entrance.cpp
+    entrance.cpp \
+    teacherwindow.cpp \
+    adminwindow.cpp \
+    initcoursedialog.cpp \
+    studentwindow.cpp
 
 HEADERS  += \
     logindialog.h \
-    entrance.h
+    entrance.h \
+    teacherwindow.h \
+    adminwindow.h \
+    qtheaders.h \
+    initcoursedialog.h \
+    studentwindow.h
 
 FORMS    += \
     logindialog.ui \
-    entrance.ui
+    entrance.ui \
+    teacherwindow.ui \
+    adminwindow.ui \
+    initcoursedialog.ui \
+    studentwindow.ui
 
 DISTFILES += \
     init_sql.sql \
     data_insert.sql
+PRECOMPILED_HEADER += qtheaders.h
