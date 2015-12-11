@@ -2,6 +2,7 @@
 #include "ui_logindialog.h"
 #include "teacherwindow.h"
 #include "adminwindow.h"
+#include "studentwindow.h"
 LoginDialog::LoginDialog(QWidget *parent, Mode md) :
     QDialog(parent),mode(md),
     ui(new Ui::LoginDialog)
@@ -41,7 +42,7 @@ void LoginDialog::on_buttonBox_accepted()
     case student:
     {
         checkPass.setTable("student");
-        checkPass.setFilter("studentid='"+ui->id->text()+"'");
+        checkPass.setFilter("studentno='"+ui->id->text()+"'");
         checkPass.select();
     }
         break;
@@ -76,6 +77,13 @@ void LoginDialog::on_buttonBox_accepted()
             AdminWindow* adw=new AdminWindow(NULL);
             this->hide();
             adw->show();
+            break;
+        }
+        case student:
+        {
+            StudentWindow* stw=new StudentWindow(NULL,ui->id->text());
+            this->hasFocus();
+            stw->show();
             break;
         }
         }

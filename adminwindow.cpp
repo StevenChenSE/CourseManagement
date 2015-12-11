@@ -57,7 +57,7 @@ void AdminWindow::initApply()
     if(!applyModel->query().isActive())
     {
         qDebug()<<applyModel->lastError();
-        QMessageBox::critical(this,tr("错误"),tr("查询申请失败，请重试或联系管理员！"));
+        QMessageBox::critical(this,tr("错误"),tr("查询申请失败，请重试或联系管理员！\n错误信息：QSqlDatabase::database()->lastError()"));
     }
 
     applyModel->setHeaderData(0,Qt::Horizontal,tr("申请编号"));
@@ -87,7 +87,7 @@ void AdminWindow::initCourse()
     if(!courseModel->query().isActive())
     {
         qDebug()<<applyModel->lastError();
-        QMessageBox::critical(this,tr("错误"),tr("查询申请失败，请重试或联系管理员！"));
+        QMessageBox::critical(this,tr("错误"),tr("查询申请失败，请重试或联系管理员！\n错误信息：QSqlDatabase::database()->lastError()"));
     }
     courseModel->setHeaderData(0,Qt::Horizontal,tr("课程编号"));
     courseModel->setHeaderData(1,Qt::Horizontal,tr("课程名称"));
@@ -132,7 +132,7 @@ void AdminWindow::on_rejectPushButton_clicked()
         query.exec(tr("update courseapply set status='未通过' where applyno='%1'").arg(applyno));
         if(!query.isActive())
         {
-            QMessageBox::critical(this,tr("错误"),tr("提交审核失败，请重试或联系管理员！"));
+            QMessageBox::critical(this,tr("错误"),tr("提交审核失败，请重试或联系管理员！\n错误信息：QSqlDatabase::database()->lastError()"));
             qDebug()<<query.lastError();
         }
     }
@@ -161,7 +161,7 @@ void AdminWindow::on_refreshCoursePushButton_clicked()
     if(!courseModel->query().isActive())
     {
         qDebug()<<applyModel->lastError();
-        QMessageBox::critical(this,tr("错误"),tr("查询申请失败，请重试或联系管理员！"));
+        QMessageBox::critical(this,tr("错误"),tr("查询申请失败，请重试或联系管理员！\n错误信息：QSqlDatabase::database()->lastError()"));
     }
 }
 
@@ -176,7 +176,7 @@ void AdminWindow::on_executePushButton_clicked()
     if(!SQLModel->query().isActive())
     {
         QMessageBox::critical(this,tr("错误"),SQLModel->lastError().text());
-        statusBar()->showMessage(tr("SQL语句执行出现错误！"));
+        statusBar()->showMessage(tr("执行出现错误！"));
     }
     else
         statusBar()->showMessage(tr("SQL语句成功执行！"));

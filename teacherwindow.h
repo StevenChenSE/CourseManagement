@@ -32,12 +32,12 @@ public:
 
 private slots:
     void on_savePushButton_clicked();
-    void personalInfoChanged();
     void on_submitPushButton_clicked();
-
     void on_refreshApplypushButton_clicked();
-
     void on_CancelApplyPushButton_clicked();
+    void personalInfoChanged();
+    void updateStudentScore();
+    void on_submitScorePushButton_clicked();
 
 private:
     Ui::TeacherWindow *ui;
@@ -45,10 +45,14 @@ private:
     QSqlTableModel *teacherModel;
     QSqlTableModel *applyModel;
     QDataWidgetMapper *mapper;
+    QSqlQueryModel *courseModel;
+    QSqlRelationalTableModel *studentModel;
     void initInfo();
     void closeEvent(QCloseEvent* event);
-    void submitCourseApplication();
+    bool submitCourseApplication();
     void initCourseApply();
+    void initStudent();
+    QString getCurrentIndex();
 };
 
 #endif // TEACHERWINDOW_H

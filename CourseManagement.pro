@@ -18,7 +18,8 @@ SOURCES += main.cpp\
     teacherwindow.cpp \
     adminwindow.cpp \
     initcoursedialog.cpp \
-    studentwindow.cpp
+    studentwindow.cpp \
+    coursetablemodel.cpp
 
 HEADERS  += \
     logindialog.h \
@@ -27,7 +28,8 @@ HEADERS  += \
     adminwindow.h \
     qtheaders.h \
     initcoursedialog.h \
-    studentwindow.h
+    studentwindow.h \
+    coursetablemodel.h
 
 FORMS    += \
     logindialog.ui \

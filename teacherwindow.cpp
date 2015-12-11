@@ -7,8 +7,11 @@ TeacherWindow::TeacherWindow(QWidget *parent, const QString &teacherId) :
     ui->setupUi(this);
     initInfo();
     initCourseApply();
+    initStudent();
     connect(ui->listWidget,&QListWidget::currentRowChanged,
             ui->stackedWidget,&QStackedWidget::setCurrentIndex);
+    connect(ui->courseTableView,&QTableView::clicked,
+            this,&TeacherWindow::updateStudentScore);
 }
 
 TeacherWindow::~TeacherWindow()
@@ -59,35 +62,26 @@ void TeacherWindow::closeEvent(QCloseEvent *event)
 
 }
 
-void TeacherWindow::submitCourseApplication()
+bool TeacherWindow::submitCourseApplication()
 {
     QSqlQuery query;
     QString applyno;
-    query.exec("select count(applyno) from courseapply");
-    if(!query.isActive())
-        QMessageBox::critical(this,tr("错误"),tr("申请提交失败，请重试或联系管理员！"));
-    if(query.next())
-    {
-        int currentIndex=query.value(0).toInt()+1;
-        applyno=tr("A%1").arg(QString::number(currentIndex));
-        while(applyno.count()<6)
-            applyno.insert(1,tr("0"));
-    }
-    else
-    {
-        QMessageBox::critical(this,tr("错误"),tr("申请提交失败，请重试或联系管理员！"));
-    }
     query.prepare("insert into courseapply values("
                   ":applyno,:teacherno,"
                   ":coursename,:courseproperty,:courselength,'待审核',:courseinfo)");
     query.bindValue(":teacherno",teacherID);
-    query.bindValue(":applyno",applyno);
+    query.bindValue(":applyno",getCurrentIndex());
     query.bindValue(":courseinfo",ui->CourseInfoPlainTextEdit->toPlainText());
     query.bindValue(":courseproperty",ui->CoursePropertyComboBox->currentText());
     query.bindValue(":coursename",ui->CourseNameineEdit->text());
     query.bindValue(":courselength",ui->courseLengthComboBox->currentText().toInt());
     if(!query.exec())
-        QMessageBox::critical(this,tr("错误"),tr("申请提交失败，请重试或联系管理员！"));
+    {
+        QMessageBox::critical(this,tr("错误"),tr("申请提交失败，请重试或联系管理员！\n错误信息：").arg(query.lastError().text()));
+        return false;
+    }
+    else
+        return true;
 }
 
 void TeacherWindow::initCourseApply()
@@ -111,11 +105,65 @@ void TeacherWindow::initCourseApply()
 
 }
 
+void TeacherWindow::initStudent()
+{
+    courseModel=new QSqlQueryModel(this);
+    courseModel->setQuery(tr("select coursename,count(studentno) a from (select coursename,studentno,course.courseno from course,courseapply,courseselect where courseapply.applyno=course.applyno and course.courseno=courseselect.courseno and teacherno='%1') group by coursename ").arg(teacherID));
+    if(courseModel->query().lastError().isValid())
+        QMessageBox::critical(this,tr("错误"),tr("数据库查询失败，请重试或联系管理员！\n错误信息：%1").arg(courseModel->query().lastError().text()));
+
+    courseModel->setHeaderData(0,Qt::Horizontal,tr("课程名称"));
+    courseModel->setHeaderData(1,Qt::Horizontal,tr("选课人数"));
+
+    ui->courseTableView->setModel(courseModel);
+    ui->courseTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->courseTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->courseTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->courseTableView->setColumnHidden(2,true);
+    ui->courseTableView->horizontalHeader()->setStretchLastSection(true);
+
+    studentModel=new QSqlRelationalTableModel(this);
+    studentModel->setTable("courseselect");
+    studentModel->setFilter(tr("teacherno='%1'").arg(teacherID));
+    studentModel->setRelation(0,QSqlRelation("student","studentno","studentname"));
+    studentModel->setSort(2,Qt::AscendingOrder);
+    studentModel->setHeaderData(0,Qt::Horizontal,tr("学生姓名"));
+    studentModel->setHeaderData(2,Qt::Horizontal,tr("成绩"));
+    studentModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+
+    ui->studentTableView->setModel(studentModel);
+    ui->studentTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->studentTableView->setEditTriggers(QAbstractItemView::DoubleClicked);
+    ui->studentTableView->horizontalHeader()->setStretchLastSection(true);
+    ui->studentTableView->setColumnHidden(1,true);
+
+}
+
+QString TeacherWindow::getCurrentIndex()
+{
+    QSqlQuery query("select applyno from courseapply order by applyno");
+    if(query.isActive())
+    {
+        int currentIndex=query.last()?query.value(0).toString().remove(0,1).toInt()+1:1;
+        QString str=tr("A%1").arg(QString::number(currentIndex));
+        while(str.count()<6)
+            str.insert(1,tr("0"));
+        return str;
+    }
+    else
+    {
+        qDebug()<<query.lastError();
+        QMessageBox::critical(this,tr("错误"),tr("SQL查询失败，请重试或联系管理员！"));
+        return QString();
+    }
+
+}
+
 
 void TeacherWindow::on_savePushButton_clicked()
 {
     if(!mapper->submit())
-        QMessageBox::critical(this,"错误","个人信息保存失败,请重试或联系管理员！");
+        QMessageBox::critical(this,tr("错误"),tr("保存提交失败，请重试或联系管理员！\n错误信息：").arg(teacherModel->lastError().text()));
     else
         ui->savePushButton->setEnabled(false);
 }
@@ -123,6 +171,21 @@ void TeacherWindow::on_savePushButton_clicked()
 void TeacherWindow::personalInfoChanged()
 {
     ui->savePushButton->setEnabled(true);
+}
+
+void TeacherWindow::updateStudentScore()
+{
+    QModelIndex index=ui->courseTableView->currentIndex();
+    index=index.sibling(index.row(),0);
+    QSqlQuery query(tr("select courseno from course,courseapply where course.applyno=courseapply.applyno and coursename='%1' and teacherno='%2'").arg(courseModel->data(index).toString()).arg(teacherID));
+    if(!query.exec()||!query.next())
+    {
+        QMessageBox::critical(this,tr("错误"),tr("查询提交失败，请重试或联系管理员！\n错误信息：%1").arg(query.lastError().text()));
+        return;
+    }
+    QString courseno=query.value(0).toString();
+    studentModel->setFilter(tr("courseno='%1'").arg(courseno));
+    studentModel->select();
 }
 
 void TeacherWindow::on_submitPushButton_clicked()
@@ -136,7 +199,10 @@ void TeacherWindow::on_submitPushButton_clicked()
                                                         QMessageBox::Yes|QMessageBox::No);
     if(bt==QMessageBox::Yes)
     {
-        submitCourseApplication();
+        if(submitCourseApplication())
+            statusBar()->showMessage(tr("成功提交申请！"));
+        else
+            statusBar()->showMessage(tr("申请提交失败！"));
     }
 }
 
@@ -147,9 +213,11 @@ void TeacherWindow::on_refreshApplypushButton_clicked()
 
 void TeacherWindow::on_CancelApplyPushButton_clicked()
 {
-    if(applyModel->data(ui->applyTableView->selectionModel()->currentIndex())==tr("通过"))
+    QModelIndex index=ui->applyTableView->currentIndex();
+    index=index.sibling(index.row(),apply_status);
+    if(applyModel->data(index)!=tr("待审核"))
     {
-        QMessageBox::critical(this,tr("错误"),tr("此课程已审核通过，不能撤销！请联系教务处！"));
+        QMessageBox::critical(this,tr("错误"),tr("此课程已经过审核，不能撤销！请联系教务处！"));
         return;
     }
     applyModel->removeRow(ui->applyTableView->currentIndex().row());
@@ -160,4 +228,16 @@ void TeacherWindow::on_CancelApplyPushButton_clicked()
     else
         applyModel->submitAll();
     on_refreshApplypushButton_clicked();
+}
+
+void TeacherWindow::on_submitScorePushButton_clicked()
+{
+    QMessageBox::StandardButton bt=QMessageBox::question(this,tr("提示"),tr("是否确认提交成绩？"));
+    if(bt==QMessageBox::Yes)
+    {
+        if(!studentModel->submitAll())
+                QMessageBox::critical(this,tr("错误"),tr("成绩提交失败，请重试或联系管理员！\n错误信息：%1").arg(studentModel->lastError().text()));
+    }
+    else
+        studentModel->revertAll();
 }
