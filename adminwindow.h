@@ -18,9 +18,7 @@ private slots:
     void on_rejectPushButton_clicked();
     void on_passPushButton_clicked();
     void on_refreshApplyPushButton_clicked();
-
     void on_refreshCoursePushButton_clicked();
-
     void on_executePushButton_clicked();
 
 private:

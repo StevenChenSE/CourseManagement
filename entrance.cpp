@@ -7,7 +7,7 @@ Entrance::Entrance(QWidget *parent) :
 {
     ui->setupUi(this);
     if(!createConnection())
-        emit reject();
+        reject();
 }
 
 Entrance::~Entrance()
@@ -52,6 +52,7 @@ bool Entrance::createConnection()
     db.setDatabaseName("dbta");
     db.setUserName("s2013010225");
     db.setPassword("8380438");
+    qDebug()<<db.driver()->hasFeature(QSqlDriver::Transactions);
     if(!db.open())
     {
         QMessageBox::critical(this,"错误",tr("数据库无法打开！")

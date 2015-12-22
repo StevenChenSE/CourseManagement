@@ -21,6 +21,8 @@ private:
     Ui::initCourseDialog *ui;
     QString applyno,teacherno;
     QString getCurrentIndex();
+    bool timeCheck();
+    bool classroomCheck();
 };
 
 #endif // INITCOURSEDIALOG_H

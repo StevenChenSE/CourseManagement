@@ -10,7 +10,7 @@ TeacherWindow::TeacherWindow(QWidget *parent, const QString &teacherId) :
     initStudent();
     connect(ui->listWidget,&QListWidget::currentRowChanged,
             ui->stackedWidget,&QStackedWidget::setCurrentIndex);
-    connect(ui->courseTableView,&QTableView::clicked,
+    connect(ui->courseTableView->selectionModel(),&QItemSelectionModel::currentRowChanged,
             this,&TeacherWindow::updateStudentScore);
 }
 
@@ -95,6 +95,7 @@ void TeacherWindow::initCourseApply()
     applyModel->setHeaderData(apply_status,Qt::Horizontal,tr("审核状态"));
     applyModel->setHeaderData(apply_info,Qt::Horizontal,tr("课程介绍"));
     applyModel->setHeaderData(apply_courselength,Qt::Horizontal,tr("课时数"));
+    applyModel->setFilter(tr("teacherno='%1'").arg(teacherID));
     applyModel->select();
     ui->applyTableView->setModel(applyModel);
     ui->applyTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -102,6 +103,7 @@ void TeacherWindow::initCourseApply()
     ui->applyTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->applyTableView->setColumnHidden(apply_teacherno,true);
     ui->applyTableView->resizeColumnsToContents();
+    ui->applyTableView->setSortingEnabled(true);
 
 }
 
@@ -121,22 +123,26 @@ void TeacherWindow::initStudent()
     ui->courseTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->courseTableView->setColumnHidden(2,true);
     ui->courseTableView->horizontalHeader()->setStretchLastSection(true);
+    ui->courseTableView->setSortingEnabled(true);
 
     studentModel=new QSqlRelationalTableModel(this);
     studentModel->setTable("courseselect");
-    studentModel->setFilter(tr("teacherno='%1'").arg(teacherID));
-    studentModel->setRelation(0,QSqlRelation("student","studentno","studentname"));
-    studentModel->setSort(2,Qt::AscendingOrder);
-    studentModel->setHeaderData(0,Qt::Horizontal,tr("学生姓名"));
-    studentModel->setHeaderData(2,Qt::Horizontal,tr("成绩"));
+    studentModel->setRelation(1,QSqlRelation("student","studentno","studentname"));
+    studentModel->setSort(3,Qt::AscendingOrder);
+    studentModel->setHeaderData(1,Qt::Horizontal,tr("学生姓名"));
+    studentModel->setHeaderData(3,Qt::Horizontal,tr("成绩"));
     studentModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
 
+
+    ui->studentTableView->setEnabled(false);
     ui->studentTableView->setModel(studentModel);
     ui->studentTableView->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->studentTableView->setEditTriggers(QAbstractItemView::DoubleClicked);
     ui->studentTableView->horizontalHeader()->setStretchLastSection(true);
-    ui->studentTableView->setColumnHidden(1,true);
-
+    ui->studentTableView->setColumnHidden(2,true);
+    ui->studentTableView->setColumnHidden(0,true);
+    ui->studentTableView->setItemDelegate(new QSqlRelationalDelegate(ui->studentTableView));
+    ui->studentTableView->setSortingEnabled(true);
 }
 
 QString TeacherWindow::getCurrentIndex()
@@ -152,8 +158,7 @@ QString TeacherWindow::getCurrentIndex()
     }
     else
     {
-        qDebug()<<query.lastError();
-        QMessageBox::critical(this,tr("错误"),tr("SQL查询失败，请重试或联系管理员！"));
+        QMessageBox::critical(this,tr("错误"),tr("保存提交失败，请重试或联系管理员！\n错误信息：").arg(query.lastError().text()));
         return QString();
     }
 
@@ -176,6 +181,12 @@ void TeacherWindow::personalInfoChanged()
 void TeacherWindow::updateStudentScore()
 {
     QModelIndex index=ui->courseTableView->currentIndex();
+    if(!index.isValid())
+    {
+        ui->studentTableView->setEnabled(false);
+        return;
+    }
+        ui->studentTableView->setEnabled(true);
     index=index.sibling(index.row(),0);
     QSqlQuery query(tr("select courseno from course,courseapply where course.applyno=courseapply.applyno and coursename='%1' and teacherno='%2'").arg(courseModel->data(index).toString()).arg(teacherID));
     if(!query.exec()||!query.next())
@@ -193,6 +204,11 @@ void TeacherWindow::on_submitPushButton_clicked()
     if(ui->CourseNameineEdit->text().isEmpty())
     {
         QMessageBox::warning(this,"错误",tr("课程名称不能为空！"));
+        return;
+    }
+    if(ui->CourseInfoPlainTextEdit->toPlainText().isEmpty())
+    {
+        QMessageBox::warning(this,"错误",tr("课程介绍不能为空！"));
         return;
     }
     QMessageBox::StandardButton bt=QMessageBox::warning(this,tr("提示"),tr("提交后不能修改申请，是否确认提交"),
@@ -235,8 +251,21 @@ void TeacherWindow::on_submitScorePushButton_clicked()
     QMessageBox::StandardButton bt=QMessageBox::question(this,tr("提示"),tr("是否确认提交成绩？"));
     if(bt==QMessageBox::Yes)
     {
-        if(!studentModel->submitAll())
+        if(!studentModel->database().transaction())
+        {
                 QMessageBox::critical(this,tr("错误"),tr("成绩提交失败，请重试或联系管理员！\n错误信息：%1").arg(studentModel->lastError().text()));
+                return;
+        }
+        if(!studentModel->submitAll())
+        {
+                QMessageBox::critical(this,tr("错误"),tr("成绩提交失败，请重试或联系管理员！\n错误信息：%1").arg(studentModel->lastError().text()));
+                studentModel->database().rollback();
+        }
+        else
+        {
+            if(!studentModel->database().commit())
+                QMessageBox::critical(this,tr("错误"),tr("成绩提交失败，请重试或联系管理员！\n错误信息：%1").arg(studentModel->lastError().text()));
+        }
     }
     else
         studentModel->revertAll();

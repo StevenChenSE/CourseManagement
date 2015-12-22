@@ -55,7 +55,7 @@ void LoginDialog::on_buttonBox_accepted()
         break;
     }
     record=checkPass.record(0);
-    if(ui->password->text()!=record.value("passwd").toString())
+    if(ui->password->text()!=record.value("passwd").toString()||record.value("passwd").toString().isEmpty())
     {
         qDebug()<<ui->password->text();
         qDebug()<<record.value("passwd").toString();

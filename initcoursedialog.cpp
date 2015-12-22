@@ -50,22 +50,30 @@ void initCourseDialog::on_buttonBox_accepted()
     if(QMessageBox::warning(this,tr("提示"),tr("是否确定提交，提交后无法恢复！"),
                             QMessageBox::Yes|QMessageBox::No)==QMessageBox::No)
         return;
-    QString str=tr("insert into course values('%1','%2%3',%4,'%5',%6,%7,'%8')")
+    if(!timeCheck())
+    {
+        QMessageBox::warning(this,tr("错误"),tr("此教师同一时间已有课程！"));
+        return;
+    }
+    if(!classroomCheck())
+    {
+        QMessageBox::warning(this,tr("错误"),tr("此教室同一时间已被占用！"));
+        return;
+    }
+    QString str=tr("insert into course values('%1','%2%3',%4,'%5',%6,'%7')")
                   .arg(ui->courseNoLineEdit->text())
                   .arg(ui->weekComboBox->currentText())
                   .arg(ui->timeComboBox->currentText())
                   .arg(ui->creditLineEdit->text())
                   .arg(ui->classroomLineEdit->text())
                   .arg(ui->cappacityLineEdit->text())
-                  .arg(0)
                   .arg(this->applyno);
     qDebug()<<str;
     QSqlQuery query;
     query.prepare(str);
     if(!query.exec())
     {
-        qDebug()<<query.lastError();
-        QMessageBox::critical(this,tr("错误"),tr("提交课程失败，请重试或联系管理员！"));
+        QMessageBox::critical(this,tr("错误"),tr("提交课程失败，请重试或联系管理员！\n错误信息:%1").arg(query.lastError().text()));
     }
     else
     {
@@ -95,4 +103,31 @@ QString initCourseDialog::getCurrentIndex()
     }
 
 
+}
+
+bool initCourseDialog::timeCheck()
+{
+    QSqlQuery query;
+    query.prepare(tr("select course.courseno from teacher,course,courseapply where teacher.teacherno=courseapply.teacherno and course.applyno=courseapply.applyno and teacher.teacherno='%1' and timeofclass='%2'")
+                  .arg(teacherno).arg(ui->weekComboBox->currentText()+
+                                      ui->timeComboBox->currentText()));
+    if(!query.exec())
+    {
+        QMessageBox::critical(this,tr("错误"),tr("SQL查询失败，请重试或联系管理员！\n错误信息:%1").arg(query.lastError().text()));
+        return false;
+    }
+    return !query.next();
+}
+
+bool initCourseDialog::classroomCheck()
+{
+    QSqlQuery query;
+    query.prepare(tr("select courseno from course where classroom='%1' and timeofclass='%2'")
+                  .arg(ui->classroomLineEdit->text()).arg(ui->weekComboBox->currentText()
+                                                          +ui->timeComboBox->currentText()));
+    if(!query.exec())
+    {
+        QMessageBox::critical(this,tr("错误"),tr("SQL查询失败，请重试或联系管理员！\n错误信息:%1").arg(query.lastError().text()));
+    }
+    return !query.next();
 }
