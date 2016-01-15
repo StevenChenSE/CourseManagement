@@ -47,11 +47,12 @@ void Entrance::on_adminButton_clicked()
 }
 bool Entrance::createConnection()
 {
+    //change it to any db you want
     db=QSqlDatabase::addDatabase("QOCI");
     db.setHostName("166.111.71.220");
     db.setDatabaseName("dbta");
     db.setUserName("s2013010225");
-    db.setPassword("8380438");
+    db.setPassword("*****");
     qDebug()<<db.driver()->hasFeature(QSqlDriver::Transactions);
     if(!db.open())
     {
